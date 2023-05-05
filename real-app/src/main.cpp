@@ -104,7 +104,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         success = false;
         app_out->info("ERROR: Could not enable low-latency mode.\n");
     } else {
-        app_out->info("Minimum audio latency enabled on the DEFAULT playback device!\n");
+        app_out->info("Minimum audio latency enabled on the FIRST playback device!\n");
         auto properties = audioClient->GetProperties();
         if (properties) {
             app_out->info(
@@ -116,65 +116,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         }
     }
 
-    AutoUpdater updater;
-    tl::expected cleanupResult = updater.CleanupPreviousSetup();
-    if (!cleanupResult) {
-        app_out->info("Error: {}", cleanupResult.error().GetMessage());
-    }
-
-    if (auto notes = updater.IsAppSuperseded(); notes) {
-        if (trayIcon != nullptr) {
-            trayIcon->Hide();
-        }
-
-        console->Open();
-
-        app_out->info(*notes);
-
-        DisplayExitMessage(success);
-        console->Close();
-        return 0;
-    }
-
-    app_out->info("Checking for updates...");
-    tl::expected info = updater.GetUpdateInfo();
-    if (!info) {
-        app_out->info("Error: {}", info.error().GetMessage());
-        app_out->info("Update failed!");
-    } else if (info->version > APP_VERSION) {
-        if (trayIcon != nullptr) {
-            trayIcon->Hide();
-        }
-
-        console->Open();
-
-        app_out->info("A new update is available!");
-        if (info->releaseNotes) {
-            app_out->info(*info->releaseNotes);
-        }
-
-        std::cout << "Do you want to update to " << info->version.ToString() << "? [y/N] : ";
-        char line[5];
-        std::cin.getline(line, 5);
-        std::string prompt(ToLower(line));
-        if (prompt == "y" || prompt == "yes") {
-            auto status = updater.ApplyUpdate(*info);
-            if (status) {
-                app_out->info("Updated successfully! Restart the application to apply changes.");
-            } else {
-                app_out->info("Update failed.");
-                app_out->info("Error: {}", status.error().GetMessage());
-            }
-
-        } else {
-            app_out->info("No: Keeping the current version.");
-        }
-
-        DisplayExitMessage(success);
-        return 2;
-    } else {
-        app_out->info("The application is up-to-date.");
-    }
 
 #pragma pop_macro("GetMessage")
     if (commandLine == COMMAND_LINE_OPTION_TRAY) {
